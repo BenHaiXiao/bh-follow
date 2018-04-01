@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="poolConfig" class="org.apache.commons.pool2.impl.GenericObjectPoolConfig">
+        <property name="maxTotal" value="${pool.max.total}"/>
+        <property name="maxIdle" value="${pool.max.idle}"/>
+        <property name="minIdle" value="${pool.min.idle}"/>
+        <property name="testOnBorrow" value="true"/>
+        <property name="testOnReturn" value="false"/>
+    </bean>
+
+    <bean id="socketConfig" class="com.hyd.ssdb.conf.SocketConfig">
+        <constructor-arg index="0" value="${socket.config.buffer.size}"/>
+        <constructor-arg index="1" value="${socket.config.timeout}"/>
+    </bean>
+
+    <!-- 多台 SSDB 主从服务器的配置 -->
+    <bean id="ssdbServer1" class="com.hyd.ssdb.conf.Server">
+        <property name="host" value="${ssd.server.host1}"/>
+        <property name="port" value="${ssd.server.port1}"/>
+        <property name="master" value="${ssd.server.is.master1}"/>
+        <property name="pass" value="${ssd.server.pass1}"/>
+        <property name="socketConfig" ref="socketConfig"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+    <bean id="ssdbServer2" class="com.hyd.ssdb.conf.Server">
+        <property name="host" value="${ssd.server.host2}"/>
+        <property name="port" value="${ssd.server.port2}"/>
+        <property name="master" value="${ssd.server.is.master2}"/>
+        <property name="pass" value="${ssd.server.pass2}"/>
+        <property name="socketConfig" ref="socketConfig"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+    <bean id="ssdbServer3" class="com.hyd.ssdb.conf.Server">
+        <property name="host" value="${ssd.server.host3}"/>
+        <property name="port" value="${ssd.server.port3}"/>
+        <property name="master" value="${ssd.server.is.master3}"/>
+        <property name="pass" value="${ssd.server.pass3}"/>
+        <property name="socketConfig" ref="socketConfig"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+    <bean id="ssdbServer4" class="com.hyd.ssdb.conf.Server">
+        <property name="host" value="${ssd.server.host4}"/>
+        <property name="port" value="${ssd.server.port4}"/>
+        <property name="master" value="${ssd.server.is.master4}"/>
+        <property name="pass" value="${ssd.server.pass4}"/>
+        <property name="socketConfig" ref="socketConfig"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+    <bean id="singleClusterSsdbClient" class="com.hyd.ssdb.SsdbClient"
+          factory-method="fromClusters" destroy-method="close">
+        <constructor-arg name="clusters">
+            <list value-type="com.hyd.ssdb.conf.Server">
+                <ref bean="ssdbServer1"/>
+                <ref bean="ssdbServer2"/>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <!-- 多台 SSDB 负载均衡的配置（每个 Cluster 一台服务器） -->
+    <bean id="ssdbCluster1" class="com.hyd.ssdb.conf.Cluster" factory-method="fromSingleServer">
+        <constructor-arg name="server" ref="ssdbServer1"/>
+    </bean>
+    <bean id="ssdbCluster2" class="com.hyd.ssdb.conf.Cluster" factory-method="fromSingleServer">
+        <constructor-arg name="server" ref="ssdbServer2"/>
+    </bean>
+    <bean id="shardingSsdbClient" class="com.hyd.ssdb.SsdbClient"
+          factory-method="fromClusters" destroy-method="close">
+        <constructor-arg name="clusters">
+            <list value-type="com.hyd.ssdb.conf.Cluster">
+                <ref bean="ssdbCluster1"/>
+                <ref bean="ssdbCluster2"/>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <!-- 带命名的 cluster 节点 -->
+    <bean id="namedCluster" class="com.hyd.ssdb.conf.Cluster" factory-method="fromSingleServer">
+        <constructor-arg name="server" ref="ssdbServer1"/>
+        <property name="id" value="cluster1"/>
+    </bean>
+
+    <bean id="propertyPlaceholderConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="ignoreResourceNotFound" value="false"/>
+        <property name="locations">
+            <list>
+                <value>classpath:/app-ctx-test.properties</value>
+            </list>
+        </property>
+    </bean>
+
+</beans>
