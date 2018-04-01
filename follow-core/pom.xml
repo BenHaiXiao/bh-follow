@@ -10,6 +10,7 @@
     </parent>
     <groupId>com.github.bh</groupId>
     <artifactId>follow-core</artifactId>
+    <packaging>jar</packaging>
     <dependencies>
         <dependency>
             <groupId>com.hyd</groupId>
